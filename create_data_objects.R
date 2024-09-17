@@ -1,10 +1,17 @@
 # Country data -----------------------------------------------------------------
+# dt_country <- fread(
+#   here(
+#     "data", 
+#     "PIPinput_survey_20231016.csv"
+#   )
+# )
+
 dt_country <- fread(
   here(
-    "data", 
-    "PIPinput_survey_20231016.csv"
+    "PIPinput_survey.csv"
   )
 )
+
 setnames(
   dt_country, 
   old = dt_country |> 
@@ -17,8 +24,7 @@ setnames(
     #"Population", 
     "PG", 
     "Inequality", 
-    "Mean", 
-    "Mean_b40"
+    "Mean"
   )
 )
 ## Exclude double rows
@@ -51,8 +57,7 @@ dt_country <-
 # Region data ------------------------------------------------------------------
 dt_region <- fread(
   here::here(
-    "data", 
-    "PIPinput_region_20231017.csv"
+    "PIPinput_region.csv"
   )
 )
 setnames(
@@ -71,8 +76,7 @@ setnames(
 ## Country lineups -------------------------------------------------------------
 dt_lineup <- fread(
   here::here(
-    "data", 
-    "PIPinput_country_20231002.csv"
+    "PIPinput_lineup.csv"
   )
 )
 setnames(
@@ -84,11 +88,11 @@ setnames(
     "Year", 
     "Reporting_level", 
     "Welfare_type", 
-    "Population",
+    #"Population",
     "PG", 
     "Inequality",
-    "Mean", 
-    "Mean_b40"
+    "Mean"
+    #"Mean_b40"
   )
 )
 ## PIP data --------------------------------------------------------------------
@@ -143,63 +147,83 @@ dt_country <- joyn::merge(
   y          = countries_lookup, 
   by         = c("Country_code"),
   keep       = "left",
-  yvars      = TRUE
+  yvars      = TRUE,
+  reportvar  = FALSE
 )
-dt_country[
-  , 
-  report := NULL
-]
+# dt_country[
+#   , 
+#   report := NULL
+# ]
 dt_country <- joyn::merge(
   x          = dt_country, 
   y          = survey_lookup, 
   by         = c("Country_code", "Year"), 
   keep       = "left",
   yvars      = TRUE, 
-  match_type = "1:1"
+  match_type = "1:1",
+  reportvar  = FALSE
 )
-dt_country[
-  , 
-  report := NULL
-]
+# dt_country[
+#   , 
+#   report := NULL
+# ]
 
 dt_lineup <- joyn::merge(
   x          = dt_lineup, 
   y          = countries_lookup, 
   by         = c("Country_code"),
   keep       = "left",
-  yvars      = TRUE
+  yvars      = TRUE,
+  reportvar  = FALSE
 )
-dt_lineup[
-  , 
-  report := NULL
-]
+# dt_lineup[
+#   , 
+#   report := NULL
+# ]
 dt_lineup <- joyn::merge(
   x          = dt_lineup, 
   y          = survey_lookup, 
   by         = c("Country_code", "Year"), 
   keep       = "left",
   yvars      = TRUE, 
-  match_type = "1:1"
+  match_type = "m:1",
+  reportvar  = FALSE
 )
-dt_lineup[
-  , 
-  report := NULL
-]
+# dt_lineup[
+#   , 
+#   report := NULL
+# ]
 dt_lineup[
   ,
   Survey_comparability := 1L
 ]
-dt_region <- joyn::merge(
-  x          = dt_region, 
-  y          = unique(countries_lookup[, .(Region_name, Region_code)]), 
-  by         = c("Region_code"), 
-  keep       = "left",
-  yvars      = TRUE
+
+# dt_region <- joyn::merge(
+#   x          = dt_region, 
+#   y          = unique(countries_lookup[, .(Region_name, Region_code)]), 
+#   by         = c("Region_code"), 
+#   keep       = "left",
+#   yvars      = TRUE,
+#   reportvar  = FALSE
+# )
+
+dt_region <- joyn::left_join(
+  x          = dt_region,
+  y          = unique(countries_lookup[, .(Region_name, Region_code)]),
+  by         = c("Region_code"),
+  relationship = "many-to-one",
+  y_vars_to_keep      = TRUE,
+  reportvar  = FALSE
 )
-dt_region[
-  , 
-  report := NULL
-]
+
+
+
+
+
+# dt_region[
+#   , 
+#   report := NULL
+# ]
 wld <- dt_region[
   Region_code == "WLD"
 ]
@@ -261,7 +285,7 @@ dt_region[
 ]
 # Income groups ----------------------------------------------------------------
 dt_class <- haven::read_dta(
-  here::here("data", "CLASS.dta")
+  here::here("CLASS.dta")
 )
 dt_class <- dt_class |> 
   as.data.table() |> 
@@ -281,17 +305,26 @@ dt_class[
   198, 
   economy := "Turkiye"
 ]
-dt_country <- joyn::merge(
+# dt_country <- joyn::merge(
+#   x = dt_country, 
+#   y = dt_class, 
+#   by = c("Country_name = economy"), 
+#   keep = "left", 
+#   yvars = "incgroup_current"
+# )
+dt_country <- joyn::left_join(
   x = dt_country, 
   y = dt_class, 
   by = c("Country_name = economy"), 
-  keep = "left", 
+  reportvar = FALSE,
+  relationship = "many-to-one",
   yvars = "incgroup_current"
 )
-dt_country[
-  , 
-  report := NULL
-]
+# dt_country[
+#   , 
+#   report := NULL
+# ]
+
 # Growth -----------------------------------------------------------------------
 ## Logs for growth rates
 dt_region[, `:=`(
@@ -303,14 +336,14 @@ dt_region[, `:=`(
 dt_country[, `:=`(
   PG_log         = log(PG),              
   Inequality_log = log(Inequality), 
-  Mean_log       = log(Mean), 
-  Mean_b40_log   = log(Mean_b40)
+  Mean_log       = log(Mean)
+  #Mean_b40_log   = log(Mean_b40)
 )]
 dt_lineup[, `:=`(
   PG_log         = log(PG),              
   Inequality_log = log(Inequality), 
-  Mean_log       = log(Mean), 
-  Mean_b40_log   = log(Mean_b40)
+  Mean_log       = log(Mean)
+  #Mean_b40_log   = log(Mean_b40)
 )]
 ## Growth rates
 dt_region[
@@ -333,8 +366,8 @@ dt_country[
   , `:=` (
     PG_growth          = (PG_log         - shift(PG_log, type = 'lag', n = 1))/time_diff, 
     Inequality_growth  = (Inequality_log - shift(Inequality_log, type = "lag", n = 1))/time_diff, 
-    Mean_growth        = (Mean_log       - shift(Mean_log, type = "lag", n = 1))/time_diff, 
-    Mean_b40_growth    = (Mean_b40_log   - shift(Mean_b40_log, type = "lag", n = 1))/time_diff
+    Mean_growth        = (Mean_log       - shift(Mean_log, type = "lag", n = 1))/time_diff
+    #Mean_b40_growth    = (Mean_b40_log   - shift(Mean_b40_log, type = "lag", n = 1))/time_diff
   )
   , by                 = Country_name
 ]
@@ -349,8 +382,8 @@ dt_lineup[
   , `:=` (
     PG_growth          = (PG_log         - shift(PG_log, type = 'lag', n = 1))/time_diff, 
     Inequality_growth  = (Inequality_log - shift(Inequality_log, type = "lag", n = 1))/time_diff, 
-    Mean_growth        = (Mean_log       - shift(Mean_log, type = "lag", n = 1))/time_diff, 
-    Mean_b40_growth    = (Mean_b40_log   - shift(Mean_b40_log, type = "lag", n = 1))/time_diff
+    Mean_growth        = (Mean_log       - shift(Mean_log, type = "lag", n = 1))/time_diff
+    #Mean_b40_growth    = (Mean_b40_log   - shift(Mean_b40_log, type = "lag", n = 1))/time_diff
   )
   , by                 = Country_name
 ]
@@ -373,16 +406,17 @@ dt_imputed <- joyn::merge(
     Year         = dt_imputed$Year         |> unique()
   ),
   x              = dt_imputed, 
-  by             = c("Country_name", "Year") 
+  by             = c("Country_name", "Year"),
+  reportvar = FALSE
 )
-dt_imputed[, report := NULL]
 dt_imputed <- joyn::merge(
   x             = dt_imputed, 
   y             = country_combo, 
   by            = c("Country_name"),
-  update_values = T 
+  update_values = T,
+  reportvar = FALSE
 )
-dt_imputed[, report := NULL]
+#dt_imputed[, report := NULL]
 
 ## Create RowTrue giving row number, and Row giving the row numbers but with missing values ----
 dt_imputed[
@@ -487,17 +521,17 @@ dt_imputed[
     X_replace
   }
 ]
-dt_imputed[
-  , 
-  Mean_b40 := {
-    X_replace <- ifelse(
-      ImputeDirection == "Forward", 
-      na.locf(Mean_b40, na.rm = F, fromLast = TRUE), 
-      na.locf(Mean_b40, na.rm = F)
-    )
-    X_replace
-  }
-]
+# dt_imputed[
+#   , 
+#   Mean_b40 := {
+#     X_replace <- ifelse(
+#       ImputeDirection == "Forward" 
+#       #na.locf(Mean_b40, na.rm = F, fromLast = TRUE), 
+#       #na.locf(Mean_b40, na.rm = F)
+#     )
+#     X_replace
+#   }
+# ]
 dt_imputed[
   , 
   Survey_comparability := {
@@ -511,40 +545,71 @@ dt_imputed[
 ]
 
 # Save objects ----------------------------------------------------------------
-saveRDS(
-  object = dt_country, 
-  file   = here::here(
-    "data", 
-    "dt_country.rds"
-  ) 
-)
-saveRDS(
-  object = dt_region, 
-  file   = here::here(
-    "data", 
-    "dt_region.rds"
-  ) 
-)
-saveRDS(
-  object = dt_lineup, 
-  file   = here::here(
-    "data", 
-    "dt_lineup.rds"
-  ) 
-)
-saveRDS(
-  object = countries_lookup, 
-  file   = here::here(
-    "data", 
-    "countries_lookup.rds"
-  ) 
-)
-saveRDS(
-  object = dt_imputed,
-  file   = here::here(
-    "data",
-    "dt_imputed.rds"
-  )
+# saveRDS(
+#   object = dt_country, 
+#   file   = here::here(
+#     "data", 
+#     "dt_country.rds"
+#   ) 
+# )
+# saveRDS(
+#   object = dt_region, 
+#   file   = here::here(
+#     "data", 
+#     "dt_region.rds"
+#   ) 
+# )
+# saveRDS(
+#   object = dt_lineup, 
+#   file   = here::here(
+#     "data", 
+#     "dt_lineup.rds"
+#   ) 
+# )
+# saveRDS(
+#   object = countries_lookup, 
+#   file   = here::here(
+#     "data", 
+#     "countries_lookup.rds"
+#   ) 
+# )
+# saveRDS(
+#   object = dt_imputed,
+#   file   = here::here(
+#     "data",
+#     "dt_imputed.rds"
+#   )
+# )
+# 
+# 
+
+# Save objects as fst ------------------------------------
+## country fst ####
+fst::write_fst(
+  x = dt_country,
+  path = here::here("dt_country.fst")
 )
 
+## region fst ####
+fst::write_fst(
+  x = dt_region,
+  path = here::here("dt_region.fst")
+)
 
+## lineup fst ####
+fst::write_fst(
+  x = dt_lineup,
+  path = here::here("dt_lineup.fst")
+)
+
+## country lookup ####
+fst::write_fst(
+  x = countries_lookup,
+  path = here::here("countries_lookup.fst")
+)
+
+## imputed ####
+fst::write_fst(
+  x = dt_imputed,
+  path = here::here("dt_imputed.fst")
+)
