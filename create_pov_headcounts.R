@@ -114,42 +114,69 @@ hc3 <- hc3[
   )
 ]
 ## Joyn ----------------------------------------
-hc <- joyn::merge(
+# hc <- joyn::merge(
+#   x          = hc1, 
+#   y          = hc2, 
+#   yvars      = TRUE, 
+#   by         = c("Country_code", "Year"), 
+#   match_type = "1:1", 
+#   keep       = "left",
+#   reportvar = FALSE
+# )
+# # hc[
+# #   , 
+# #   report := NULL
+# # ]
+# hc <- joyn::merge(
+#   x          = hc, 
+#   y          = hc3, 
+#   yvars      = T, 
+#   by         = c("Country_code", "Year"), 
+#   match_type = "1:1", 
+#   keep       = "left",
+#   reportvar = FALSE
+# )
+# hc[
+#   , 
+#   report := NULL
+# ]
+
+## Joyn ------------------------------
+
+hc <- joyn::left_join(
   x          = hc1, 
   y          = hc2, 
-  yvars      = T, 
+  yvars      = TRUE, 
   by         = c("Country_code", "Year"), 
-  match_type = "1:1", 
-  keep       = "left"
+  relationship = "one-to-one", 
+  reportvar = FALSE
 )
-hc[
-  , 
-  report := NULL
-]
-hc <- joyn::merge(
+
+hc <- joyn::left_join(
   x          = hc, 
   y          = hc3, 
-  yvars      = T, 
+  yvars      = TRUE, 
   by         = c("Country_code", "Year"), 
-  match_type = "1:1", 
-  keep       = "left"
+  relationship = "one-to-one", 
+  reportvar = FALSE
 )
-hc[
-  , 
-  report := NULL
-]
+
 
 ## Save ------------------------------
 
 
-saveRDS(
-  object = hc, 
-  file   = here::here(
-    "data", 
-    "headcounts_survey.rds"
-  )
-)
+# saveRDS(
+#   object = hc, 
+#   file   = here::here(
+#     "data", 
+#     "headcounts_survey.rds"
+#   )
+# )
 
+fst::write_fst(
+  x = hc,
+  path = here::here("headcounts_survey.fst")
+)
 
 
 # LINEUP YEARS -----------------------------------------------------------------
@@ -280,38 +307,43 @@ hc_lineup <- joyn::merge(
   yvars      = T, 
   by         = c("Country_code", "Year"), 
   match_type = "1:1", 
-  keep       = "left"
+  keep       = "left",
+  reportvar = FALSE
 )
-hc_lineup[
-  , 
-  report := NULL
-]
+# hc_lineup[
+#   , 
+#   report := NULL
+# ]
 hc_lineup <- joyn::merge(
   x          = hc_lineup, 
   y          = hc3_lineup, 
   yvars      = T, 
   by         = c("Country_code", "Year"), 
   match_type = "1:1", 
-  keep       = "left"
+  keep       = "left",
+  reportvar = FALSE
 )
-hc_lineup[
-  , 
-  report := NULL
-]
+# hc_lineup[
+#   , 
+#   report := NULL
+# ]
 
 ## Save ------------------------------
 
 
-saveRDS(
-  object = hc_lineup, 
-  file   = here::here(
-    "data", 
-    "headcounts_lineup.rds"
-  )
+# saveRDS(
+#   object = hc_lineup, 
+#   file   = here::here(
+#     "data", 
+#     "headcounts_lineup.rds"
+#   )
+# )
+
+
+fst::write_fst(
+  x = hc_lineup,
+  path = here::here("headcounts_lineup.fst")
 )
-
-
-
 
 
 
