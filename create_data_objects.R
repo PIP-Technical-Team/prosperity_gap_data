@@ -5,6 +5,9 @@
 #     "PIPinput_survey_20231016.csv"
 #   )
 # )
+library(data.table)
+library(collapse)
+library(here)
 
 dt_country <- fread(
   here(
@@ -96,7 +99,7 @@ setnames(
   )
 )
 ## PIP data --------------------------------------------------------------------
-dt_pip <- pipr::get_stats(format = "rds") |> 
+dt_pip <- pipr::get_stats() |> 
   as.data.table()
 # Exclude double rows
 dt_pip <- 
@@ -150,10 +153,7 @@ dt_country <- joyn::merge(
   yvars      = TRUE,
   reportvar  = FALSE
 )
-# dt_country[
-#   , 
-#   report := NULL
-# ]
+
 dt_country <- joyn::merge(
   x          = dt_country, 
   y          = survey_lookup, 
@@ -163,40 +163,36 @@ dt_country <- joyn::merge(
   match_type = "1:1",
   reportvar  = FALSE
 )
-# dt_country[
-#   , 
-#   report := NULL
-# ]
 
-dt_lineup <- joyn::merge(
+#------------------------------------------------------
+dt_lineup <- joyn::joyn(
   x          = dt_lineup, 
   y          = countries_lookup, 
   by         = c("Country_code"),
   keep       = "left",
-  yvars      = TRUE,
-  reportvar  = FALSE
-)
+  match_type = "m:1",
+  yvars      = TRUE, 
+  reportvar  = FALSE)
 # dt_lineup[
 #   , 
 #   report := NULL
 # ]
-dt_lineup <- joyn::merge(
+dt_lineup <- joyn::joyn(
   x          = dt_lineup, 
   y          = survey_lookup, 
   by         = c("Country_code", "Year"), 
   keep       = "left",
-  yvars      = TRUE, 
   match_type = "m:1",
-  reportvar  = FALSE
-)
+  yvars      = TRUE, 
+  reportvar  = FALSE)
 # dt_lineup[
 #   , 
 #   report := NULL
 # ]
-dt_lineup[
-  ,
-  Survey_comparability := 1L
-]
+# dt_lineup[
+#   ,
+#   Survey_comparability := 1L
+# ]
 
 # dt_region <- joyn::merge(
 #   x          = dt_region, 
@@ -400,7 +396,7 @@ country_combo <- unique(
 )
 
 ## Fill Missing ----
-dt_imputed <- joyn::merge(
+dt_imputed <- joyn::joyn(
   y              = CJ(
     Country_name = dt_imputed$Country_name |> unique(), 
     Year         = dt_imputed$Year         |> unique()
@@ -409,13 +405,13 @@ dt_imputed <- joyn::merge(
   by             = c("Country_name", "Year"),
   reportvar = FALSE
 )
-dt_imputed <- joyn::merge(
-  x             = dt_imputed, 
-  y             = country_combo, 
-  by            = c("Country_name"),
-  update_values = T,
-  reportvar = FALSE
-)
+# dt_imputed <- joyn::joyn(
+#   x             = dt_imputed, 
+#   y             = country_combo, 
+#   by            = c("Country_name"),
+#   update_values = T,
+#   reportvar = FALSE
+# )
 #dt_imputed[, report := NULL]
 
 ## Create RowTrue giving row number, and Row giving the row numbers but with missing values ----
@@ -425,30 +421,30 @@ dt_imputed[
 ]
 dt_imputed[
   , 
-  Row := ifelse(
+  Row := fifelse(
     is.na(PG), NA, RowTrue
   )
 ]
 ## Look backward and forward to impute the row numbers for Row ----
 dt_imputed[
   , 
-  Backward := na.locf(Row, na.rm = F),
+  Backward := collapse::na_locf(Row),
   by = Country_name
 ]
 dt_imputed[
   , 
-  Backward := ifelse(
+  Backward := fifelse(
     is.na(Backward), 1000, Backward
   )
 ]
 dt_imputed[
   , 
-  Forward := na.locf(Row, fromLast =T, na.rm = F),
+  Forward := collapse::na_focb(Row),
   by = Country_name
 ]
 dt_imputed[
   , 
-  Forward := ifelse(
+  Forward := fifelse(
     is.na(Forward), 1000, Forward
   )
 ]
@@ -471,8 +467,8 @@ dt_imputed[
   Reporting_level := {
     X_replace <- ifelse(
       ImputeDirection == "Forward", 
-      na.locf(Reporting_level, na.rm = F, fromLast = TRUE), 
-      na.locf(Reporting_level)
+      collapse::na_focb(Reporting_level), 
+      collapse::na_locf(Reporting_level)
     )
     X_replace
   }
@@ -482,8 +478,8 @@ dt_imputed[
   Welfare_type := {
     X_replace <- ifelse(
       ImputeDirection == "Forward", 
-      na.locf(Welfare_type, na.rm = F, fromLast = TRUE), 
-      na.locf(Welfare_type)
+      collapse::na_focb(Welfare_type), 
+      collapse::na_locf(Welfare_type)
     )
     X_replace
   }
@@ -493,8 +489,8 @@ dt_imputed[
   PG := {
     X_replace <- ifelse(
       ImputeDirection == "Forward", 
-      na.locf(PG, na.rm = F, fromLast = TRUE), 
-      na.locf(PG, na.rm = F)
+      collapse::na_focb(PG), 
+      collapse::na_locf(PG)
     )
     X_replace
   }
@@ -504,8 +500,8 @@ dt_imputed[
   Inequality := {
     X_replace <- ifelse(
       ImputeDirection == "Forward", 
-      na.locf(Inequality, na.rm = F, fromLast = TRUE), 
-      na.locf(Inequality)
+      collapse::na_focb(Inequality), 
+      collapse::na_locf(Inequality)
     )
     X_replace
   }
@@ -515,8 +511,8 @@ dt_imputed[
   Mean := {
     X_replace <- ifelse(
       ImputeDirection == "Forward", 
-      na.locf(Mean, na.rm = F, fromLast = TRUE), 
-      na.locf(Mean, na.rm = F)
+      collapse::na_focb(Mean), 
+      collapse::na_locf(Mean)
     )
     X_replace
   }
@@ -526,8 +522,8 @@ dt_imputed[
 #   Mean_b40 := {
 #     X_replace <- ifelse(
 #       ImputeDirection == "Forward" 
-#       #na.locf(Mean_b40, na.rm = F, fromLast = TRUE), 
-#       #na.locf(Mean_b40, na.rm = F)
+#       #collapse::na_focb(Mean_b40), 
+#       #collapse::na_locf(Mean_b40F)
 #     )
 #     X_replace
 #   }
@@ -537,8 +533,8 @@ dt_imputed[
   Survey_comparability := {
     X_replace <- ifelse(
       ImputeDirection == "Forward", 
-      na.locf(Survey_comparability, na.rm = F, fromLast = TRUE), 
-      na.locf(Survey_comparability, na.rm = F)
+      collapse::na_focb(Survey_comparability), 
+      collapse::na_locf(Survey_comparability)
     )
     X_replace
   }
@@ -613,3 +609,4 @@ fst::write_fst(
   x = dt_imputed,
   path = here::here("dt_imputed.fst")
 )
+@lineup_old <- fst::read_fst(here::here("dt_lineup.fst"))
