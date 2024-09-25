@@ -77,31 +77,31 @@ setnames(
 dt_pip <- pipr::get_stats() |> 
   as.data.table()
 # Exclude double rows
-dt_pip <- 
-  dt_pip[, 
-         if (.N > 1) {
-           .SD[!reporting_level == "rural"] 
-         } else {
-           .SD
-         }, 
-         by = .(country_name, year, welfare_type)
-  ][, 
-    if (.N > 1) {
-      .SD[reporting_level == "national"] 
-    } else {
-      .SD
-    }, 
-    by = .(country_name, year, welfare_type)
-  ]
-dt_pip <- 
-  dt_pip[, 
-         if (.N > 1) {
-           .SD[welfare_type == "income"] 
-         } else {
-           .SD
-         }, 
-         by = .(country_name, year, reporting_level)
-  ]
+# dt_pip <- 
+#   dt_pip[, 
+#          if (.N > 1) {
+#            .SD[!reporting_level == "rural"] 
+#          } else {
+#            .SD
+#          }, 
+#          by = .(country_name, year, welfare_type)
+#   ][, 
+#     if (.N > 1) {
+#       .SD[reporting_level == "national"] 
+#     } else {
+#       .SD
+#     }, 
+#     by = .(country_name, year, welfare_type)
+#   ]
+# dt_pip <- 
+#   dt_pip[, 
+#          if (.N > 1) {
+#            .SD[welfare_type == "income"] 
+#          } else {
+#            .SD
+#          }, 
+#          by = .(country_name, year, reporting_level)
+#   ]
 # Data Objects -----------------------------------------------------------------
 countries_lookup <- dt_pip[
   ,
@@ -116,7 +116,11 @@ setnames(
 
 survey_lookup <- dt_pip[
   , 
-  .(Year = year, Country_code = country_code, Survey_comparability = survey_comparability)
+  .(Year = year, 
+    Country_code = country_code, 
+    Survey_comparability = survey_comparability, 
+    Welfare_type = welfare_type, 
+    Reporting_level = reporting_level)
 ]
 
 # Add country and region names -------------------------------------------------
@@ -128,9 +132,9 @@ dt_country <- joyn::merge(
   yvars      = TRUE,
   reportvar  = FALSE
 )
-
-dt_country <- dt_country |> 
-  fmutate(Survey_comparability = paste0(Country_code, Reporting_level, Welfare_type))
+# 
+# dt_country <- dt_country |> 
+#   fmutate(Survey_comparability = paste0(Country_code, Reporting_level, Welfare_type))
 
 #------------------------------------------------------
 dt_lineup <- joyn::joyn(
@@ -148,7 +152,7 @@ dt_lineup <- joyn::joyn(
 dt_lineup <- joyn::joyn(
   x          = dt_lineup, 
   y          = survey_lookup, 
-  by         = c("Country_code", "Year"), 
+  by         = c("Country_code", "Year", "Welfare_type", "Reporting_level"), 
   keep       = "left",
   match_type = "m:1",
   yvars      = TRUE, 
@@ -565,4 +569,4 @@ fst::write_fst(
   x = dt_imputed,
   path = here::here("dt_imputed.fst")
 )
-@lineup_old <- fst::read_fst(here::here("dt_lineup.fst"))
+#lineup_old <- fst::read_fst(here::here("dt_lineup.fst"))
