@@ -10,10 +10,7 @@ library(collapse)
 library(here)
 
 dt_country <- fread(
-  here(
-    "PIPinput_survey.csv"
-  )
-)
+  here("PIPinput_survey.csv"))
 
 setnames(
   dt_country, 
@@ -30,8 +27,9 @@ setnames(
     "Mean"
   )
 )
-
-
+# dt_country <- dt_country |> qDT() 
+# dt_country[, .N, by = c("Country_code", "Year")][N>1,]
+# dt_country[Country_code == "ALB" & Year == 2016]
 # Region data ------------------------------------------------------------------
 dt_region <- fread(
   here::here(
@@ -75,7 +73,20 @@ setnames(
 )
 ## PIP data --------------------------------------------------------------------
 dt_pip <- pipr::get_stats() |> 
-  as.data.table()
+  qDT()
+dt_country <- dt_country |> 
+  joyn::left_join(y = dt_pip |> 
+                    fselect(Year = year, 
+                            Country_code = country_code, 
+                            Survey_comparability = survey_comparability, 
+                            Welfare_type = welfare_type, 
+                            Reporting_level = reporting_level), 
+                  reportvar = FALSE, 
+                  by = c("Country_code", 
+                         "Year", 
+                         "Welfare_type", 
+                         "Reporting_level"), 
+                  relationship = "one-to-one")
 # Exclude double rows
 # dt_pip <- 
 #   dt_pip[, 
