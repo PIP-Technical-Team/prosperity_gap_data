@@ -10,10 +10,7 @@ library(collapse)
 library(here)
 
 dt_country <- fread(
-  here(
-    "PIPinput_survey.csv"
-  )
-)
+  here("PIPinput_survey.csv"))
 
 setnames(
   dt_country, 
@@ -30,33 +27,9 @@ setnames(
     "Mean"
   )
 )
-## Exclude double rows
-dt_country <- 
-  dt_country[, 
-             if (.N > 1) {
-               .SD[!Reporting_level == "rural"] 
-             } else {
-               .SD
-             }, 
-             by = .(Country_code, Year, Welfare_type)
-  ][, 
-    if (.N > 1) {
-      .SD[Reporting_level == "national"] 
-    } else {
-      .SD
-    }, 
-    by = .(Country_code, Year, Welfare_type)
-  ]
-dt_country <- 
-  dt_country[, 
-             if (.N > 1) {
-               .SD[Welfare_type == "income"] 
-             } else {
-               .SD
-             }, 
-             by = .(Country_code, Year, Reporting_level)
-  ]
-
+# dt_country <- dt_country |> qDT() 
+# dt_country[, .N, by = c("Country_code", "Year")][N>1,]
+# dt_country[Country_code == "ALB" & Year == 2016]
 # Region data ------------------------------------------------------------------
 dt_region <- fread(
   here::here(
@@ -100,33 +73,46 @@ setnames(
 )
 ## PIP data --------------------------------------------------------------------
 dt_pip <- pipr::get_stats() |> 
-  as.data.table()
+  qDT()
+dt_country <- dt_country |> 
+  joyn::left_join(y = dt_pip |> 
+                    fselect(Year = year, 
+                            Country_code = country_code, 
+                            Survey_comparability = survey_comparability, 
+                            Welfare_type = welfare_type, 
+                            Reporting_level = reporting_level), 
+                  reportvar = FALSE, 
+                  by = c("Country_code", 
+                         "Year", 
+                         "Welfare_type", 
+                         "Reporting_level"), 
+                  relationship = "one-to-one")
 # Exclude double rows
-dt_pip <- 
-  dt_pip[, 
-         if (.N > 1) {
-           .SD[!reporting_level == "rural"] 
-         } else {
-           .SD
-         }, 
-         by = .(country_name, year, welfare_type)
-  ][, 
-    if (.N > 1) {
-      .SD[reporting_level == "national"] 
-    } else {
-      .SD
-    }, 
-    by = .(country_name, year, welfare_type)
-  ]
-dt_pip <- 
-  dt_pip[, 
-         if (.N > 1) {
-           .SD[welfare_type == "income"] 
-         } else {
-           .SD
-         }, 
-         by = .(country_name, year, reporting_level)
-  ]
+# dt_pip <- 
+#   dt_pip[, 
+#          if (.N > 1) {
+#            .SD[!reporting_level == "rural"] 
+#          } else {
+#            .SD
+#          }, 
+#          by = .(country_name, year, welfare_type)
+#   ][, 
+#     if (.N > 1) {
+#       .SD[reporting_level == "national"] 
+#     } else {
+#       .SD
+#     }, 
+#     by = .(country_name, year, welfare_type)
+#   ]
+# dt_pip <- 
+#   dt_pip[, 
+#          if (.N > 1) {
+#            .SD[welfare_type == "income"] 
+#          } else {
+#            .SD
+#          }, 
+#          by = .(country_name, year, reporting_level)
+#   ]
 # Data Objects -----------------------------------------------------------------
 countries_lookup <- dt_pip[
   ,
@@ -141,7 +127,11 @@ setnames(
 
 survey_lookup <- dt_pip[
   , 
-  .(Year = year, Country_code = country_code, Survey_comparability = survey_comparability)
+  .(Year = year, 
+    Country_code = country_code, 
+    Survey_comparability = survey_comparability, 
+    Welfare_type = welfare_type, 
+    Reporting_level = reporting_level)
 ]
 
 # Add country and region names -------------------------------------------------
@@ -153,16 +143,9 @@ dt_country <- joyn::merge(
   yvars      = TRUE,
   reportvar  = FALSE
 )
-
-dt_country <- joyn::merge(
-  x          = dt_country, 
-  y          = survey_lookup, 
-  by         = c("Country_code", "Year"), 
-  keep       = "left",
-  yvars      = TRUE, 
-  match_type = "1:1",
-  reportvar  = FALSE
-)
+# 
+# dt_country <- dt_country |> 
+#   fmutate(Survey_comparability = paste0(Country_code, Reporting_level, Welfare_type))
 
 #------------------------------------------------------
 dt_lineup <- joyn::joyn(
@@ -180,7 +163,7 @@ dt_lineup <- joyn::joyn(
 dt_lineup <- joyn::joyn(
   x          = dt_lineup, 
   y          = survey_lookup, 
-  by         = c("Country_code", "Year"), 
+  by         = c("Country_code", "Year", "Welfare_type", "Reporting_level"), 
   keep       = "left",
   match_type = "m:1",
   yvars      = TRUE, 
@@ -387,6 +370,33 @@ dt_lineup[
 # Imputation data --------------------------------------------------------------
 
 dt_imputed <- copy(dt_country)
+# Exclude double rows
+dt_imputed <-
+  dt_imputed[,
+             if (.N > 1) {
+               .SD[!Reporting_level == "rural"]
+             } else {
+               .SD
+             },
+             by = .(Country_code, Year, Welfare_type)
+  ][,
+    if (.N > 1) {
+      .SD[Reporting_level == "national"]
+    } else {
+      .SD
+    },
+    by = .(Country_code, Year, Welfare_type)
+  ]
+dt_imputed <-
+  dt_imputed[,
+             if (.N > 1) {
+               .SD[Welfare_type == "income"]
+             } else {
+               .SD
+             },
+             by = .(Country_code, Year, Reporting_level)
+  ]
+
 country_combo <- unique(
   dt_imputed[
     ,
@@ -540,45 +550,6 @@ dt_imputed[
   }
 ]
 
-# Save objects ----------------------------------------------------------------
-# saveRDS(
-#   object = dt_country, 
-#   file   = here::here(
-#     "data", 
-#     "dt_country.rds"
-#   ) 
-# )
-# saveRDS(
-#   object = dt_region, 
-#   file   = here::here(
-#     "data", 
-#     "dt_region.rds"
-#   ) 
-# )
-# saveRDS(
-#   object = dt_lineup, 
-#   file   = here::here(
-#     "data", 
-#     "dt_lineup.rds"
-#   ) 
-# )
-# saveRDS(
-#   object = countries_lookup, 
-#   file   = here::here(
-#     "data", 
-#     "countries_lookup.rds"
-#   ) 
-# )
-# saveRDS(
-#   object = dt_imputed,
-#   file   = here::here(
-#     "data",
-#     "dt_imputed.rds"
-#   )
-# )
-# 
-# 
-
 # Save objects as fst ------------------------------------
 ## country fst ####
 fst::write_fst(
@@ -609,4 +580,4 @@ fst::write_fst(
   x = dt_imputed,
   path = here::here("dt_imputed.fst")
 )
-@lineup_old <- fst::read_fst(here::here("dt_lineup.fst"))
+#lineup_old <- fst::read_fst(here::here("dt_lineup.fst"))
