@@ -31,31 +31,31 @@ setnames(
   )
 )
 ## Exclude double rows
-dt_country <- 
-  dt_country[, 
-             if (.N > 1) {
-               .SD[!Reporting_level == "rural"] 
-             } else {
-               .SD
-             }, 
-             by = .(Country_code, Year, Welfare_type)
-  ][, 
-    if (.N > 1) {
-      .SD[Reporting_level == "national"] 
-    } else {
-      .SD
-    }, 
-    by = .(Country_code, Year, Welfare_type)
-  ]
-dt_country <- 
-  dt_country[, 
-             if (.N > 1) {
-               .SD[Welfare_type == "income"] 
-             } else {
-               .SD
-             }, 
-             by = .(Country_code, Year, Reporting_level)
-  ]
+# dt_country <- 
+#   dt_country[, 
+#              if (.N > 1) {
+#                .SD[!Reporting_level == "rural"] 
+#              } else {
+#                .SD
+#              }, 
+#              by = .(Country_code, Year, Welfare_type)
+#   ][, 
+#     if (.N > 1) {
+#       .SD[Reporting_level == "national"] 
+#     } else {
+#       .SD
+#     }, 
+#     by = .(Country_code, Year, Welfare_type)
+#   ]
+# dt_country <- 
+#   dt_country[, 
+#              if (.N > 1) {
+#                .SD[Welfare_type == "income"] 
+#              } else {
+#                .SD
+#              }, 
+#              by = .(Country_code, Year, Reporting_level)
+#   ]
 
 # Region data ------------------------------------------------------------------
 dt_region <- fread(
@@ -154,15 +154,8 @@ dt_country <- joyn::merge(
   reportvar  = FALSE
 )
 
-dt_country <- joyn::merge(
-  x          = dt_country, 
-  y          = survey_lookup, 
-  by         = c("Country_code", "Year"), 
-  keep       = "left",
-  yvars      = TRUE, 
-  match_type = "1:1",
-  reportvar  = FALSE
-)
+dt_country <- dt_country |> 
+  fmutate(Survey_comparability = paste0(Country_code, Reporting_level, Welfare_type))
 
 #------------------------------------------------------
 dt_lineup <- joyn::joyn(
