@@ -30,32 +30,7 @@ setnames(
     "Mean"
   )
 )
-## Exclude double rows
-# dt_country <- 
-#   dt_country[, 
-#              if (.N > 1) {
-#                .SD[!Reporting_level == "rural"] 
-#              } else {
-#                .SD
-#              }, 
-#              by = .(Country_code, Year, Welfare_type)
-#   ][, 
-#     if (.N > 1) {
-#       .SD[Reporting_level == "national"] 
-#     } else {
-#       .SD
-#     }, 
-#     by = .(Country_code, Year, Welfare_type)
-#   ]
-# dt_country <- 
-#   dt_country[, 
-#              if (.N > 1) {
-#                .SD[Welfare_type == "income"] 
-#              } else {
-#                .SD
-#              }, 
-#              by = .(Country_code, Year, Reporting_level)
-#   ]
+
 
 # Region data ------------------------------------------------------------------
 dt_region <- fread(
@@ -380,6 +355,33 @@ dt_lineup[
 # Imputation data --------------------------------------------------------------
 
 dt_imputed <- copy(dt_country)
+# Exclude double rows
+dt_imputed <-
+  dt_imputed[,
+             if (.N > 1) {
+               .SD[!Reporting_level == "rural"]
+             } else {
+               .SD
+             },
+             by = .(Country_code, Year, Welfare_type)
+  ][,
+    if (.N > 1) {
+      .SD[Reporting_level == "national"]
+    } else {
+      .SD
+    },
+    by = .(Country_code, Year, Welfare_type)
+  ]
+dt_imputed <-
+  dt_imputed[,
+             if (.N > 1) {
+               .SD[Welfare_type == "income"]
+             } else {
+               .SD
+             },
+             by = .(Country_code, Year, Reporting_level)
+  ]
+
 country_combo <- unique(
   dt_imputed[
     ,
@@ -532,45 +534,6 @@ dt_imputed[
     X_replace
   }
 ]
-
-# Save objects ----------------------------------------------------------------
-# saveRDS(
-#   object = dt_country, 
-#   file   = here::here(
-#     "data", 
-#     "dt_country.rds"
-#   ) 
-# )
-# saveRDS(
-#   object = dt_region, 
-#   file   = here::here(
-#     "data", 
-#     "dt_region.rds"
-#   ) 
-# )
-# saveRDS(
-#   object = dt_lineup, 
-#   file   = here::here(
-#     "data", 
-#     "dt_lineup.rds"
-#   ) 
-# )
-# saveRDS(
-#   object = countries_lookup, 
-#   file   = here::here(
-#     "data", 
-#     "countries_lookup.rds"
-#   ) 
-# )
-# saveRDS(
-#   object = dt_imputed,
-#   file   = here::here(
-#     "data",
-#     "dt_imputed.rds"
-#   )
-# )
-# 
-# 
 
 # Save objects as fst ------------------------------------
 ## country fst ####
