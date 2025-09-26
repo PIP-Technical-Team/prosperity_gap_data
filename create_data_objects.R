@@ -234,6 +234,7 @@ dt_region <- dt_region[
 ]
 # Add global numbers -----------------------------------------------------------
 global_summary <- dt_region[
+  ! Region_code %in% c("AFE", "AFW")
   , 
   .(
     PG = sum(PG),
