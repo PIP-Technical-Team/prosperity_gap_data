@@ -9,6 +9,29 @@ library(data.table)
 library(collapse)
 library(here)
 
+
+
+load_class_data <- function() {
+  
+  gh_user   <- "https://raw.githubusercontent.com"
+  org_data  <- paste(gh_user,
+                     "GPID-WB",
+                     "Class",
+                     "master",
+                     "OutputData",
+                     "CLASS.dta",
+                     sep = "/")
+  filename <- "CLASS.dta"
+  
+  temp_file <- tempfile(fileext = fs::path_ext(filename))
+  req <- httr::GET(org_data,
+                   # write result to disk
+                   httr::write_disk(path = temp_file))
+  
+  haven::read_dta(temp_file)
+  
+}
+
 dt_country <- fread(
   here("PIPinput_survey.csv"))
 
@@ -72,7 +95,7 @@ setnames(
   )
 )
 ## PIP data --------------------------------------------------------------------
-dt_pip <- pipr::get_stats() |> 
+dt_pip <- pipr::get_stats(server = "dev") |> 
   qDT()
 dt_country <- dt_country |> 
   joyn::left_join(y = dt_pip |> 
@@ -263,25 +286,31 @@ dt_region[
   Mean := wld$Mean
 ]
 # Income groups ----------------------------------------------------------------
-dt_class <- haven::read_dta(
+dt_class2 <- haven::read_dta(
   here::here("CLASS.dta")
 )
-dt_class <- dt_class |> 
+dt_class <- load_class_data() |> 
+  fgroup_by(code) |>
+  fmutate(max_year = fmax(year_fiscal)) |>
+  fungroup() |>
+  fsubset(year_fiscal == max_year) |>
+  qDT()
+dt_class <- dt_class |>
   as.data.table() |> 
   unique(
-    by = c("economy", "incgroup_current")
+    by = c("economy", "incgroup_code")
   )
 ## Clean country names
 dt_class[
-  38, 
+  code == "CIV", 
   economy := "Cote d'Ivoire"
 ]
 dt_class[
-  179, 
+  code == "STP", 
   economy := "Sao Tome and Principe"
 ]
 dt_class[
-  198, 
+  code == "TUR", 
   economy := "Turkiye"
 ]
 # dt_country <- joyn::merge(
@@ -291,13 +320,14 @@ dt_class[
 #   keep = "left", 
 #   yvars = "incgroup_current"
 # )
+
 dt_country <- joyn::left_join(
   x = dt_country, 
-  y = dt_class, 
+  y = dt_class,
   by = c("Country_name = economy"), 
   reportvar = FALSE,
   relationship = "many-to-one",
-  yvars = "incgroup_current"
+  yvars = c("incgroup_code", "incgroup")
 )
 # dt_country[
 #   , 

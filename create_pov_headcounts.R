@@ -2,7 +2,9 @@
 
 ## Povline = 2.15 ------------------------------
 hc1 <- pipr::get_stats(
-  povline = 2.15
+  povline = 3, 
+  server = "dev"
+  
 )
 setDT(hc1)
 # hc1 <- 
@@ -37,14 +39,15 @@ hc1 <- hc1[
     Country_name         = country_name, 
     Survey_comparability = survey_comparability, 
     Year                 = year, 
-    Headcount215         = headcount, 
+    Headcount3         = headcount, 
     Reporting_level      = reporting_level, 
     Welfare_type         = welfare_type)
 ]
 
 ## Povline = 3.65 ------------------------------
 hc2 <- pipr::get_stats(
-  povline = 3.65
+  povline = 4.20, 
+  server = "dev"
 )
 setDT(hc2)
 # hc2 <- 
@@ -79,14 +82,15 @@ hc2 <- hc2[
     Country_name         = country_name, 
     Survey_comparability = survey_comparability, 
     Year                 = year, 
-    Headcount365         = headcount, 
+    Headcount420         = headcount, 
     Reporting_level      = reporting_level, 
     Welfare_type         = welfare_type)
 ]
 
 ## Povline = 6.85 ------------------------------
 hc3 <- pipr::get_stats(
-  povline = 6.85
+  povline = 8.30, 
+  server = "dev"
 )
 setDT(hc3)
 # hc3 <- 
@@ -121,7 +125,7 @@ hc3 <- hc3[
     Country_name         = country_name, 
     Survey_comparability = survey_comparability, 
     Year                 = year, 
-    Headcount685         = headcount, 
+    Headcount         = headcount, 
     Reporting_level      = reporting_level, 
     Welfare_type         = welfare_type)
 ]
@@ -198,8 +202,9 @@ fst::write_fst(
 
 ## Povline = 2.15 ------------------------------
 hc1_lineup <- pipr::get_stats(
-  povline   = 2.15, 
-  fill_gaps = TRUE
+  povline   = 3, 
+  fill_gaps = TRUE, 
+  server = "dev"
 )
 setDT(hc1_lineup)
 hc1_lineup <- 
@@ -234,7 +239,7 @@ hc1_lineup <- hc1_lineup[
     Country_name         = country_name, 
     Survey_comparability = survey_comparability, 
     Year                 = year, 
-    Headcount215         = headcount, 
+    Headcount3         = headcount, 
     Reporting_level      = reporting_level, 
     Welfare_type         = welfare_type
   )
@@ -242,8 +247,9 @@ hc1_lineup <- hc1_lineup[
 
 ## Povline = 3.65 ------------------------------
 hc2_lineup <- pipr::get_stats(
-  povline   = 3.65, 
-  fill_gaps = TRUE
+  povline   = 4.20, 
+  fill_gaps = TRUE, 
+  server = "dev"
 )
 setDT(hc2_lineup)
 hc2_lineup <- 
@@ -278,7 +284,7 @@ hc2_lineup <- hc2_lineup[
     Country_name         = country_name, 
     Survey_comparability = survey_comparability, 
     Year                 = year, 
-    Headcount365         = headcount, 
+    Headcount420         = headcount, 
     Reporting_level      = reporting_level, 
     Welfare_type         = welfare_type
   )
@@ -286,8 +292,9 @@ hc2_lineup <- hc2_lineup[
 
 ## Povline = 6.85 ------------------------------
 hc3_lineup <- pipr::get_stats(
-  povline   = 6.85, 
-  fill_gaps = TRUE
+  povline   = 8.30, 
+  fill_gaps = TRUE, 
+  server = "dev"
 )
 setDT(hc3_lineup)
 hc3_lineup <- 
@@ -322,7 +329,7 @@ hc3_lineup <- hc3_lineup[
     Country_name         = country_name, 
     Survey_comparability = survey_comparability, 
     Year                 = year, 
-    Headcount685         = headcount, 
+    Headcount830         = headcount, 
     Reporting_level      = reporting_level, 
     Welfare_type         = welfare_type
   )
